@@ -54,7 +54,7 @@ public class Controller : MonoBehaviour {
         }
         else
         {
-            //not 0 because sign of the previous speed needs to be kept
+            //not 0 to keep the sign of the previous speed
             actualMoveSpeed = Mathf.MoveTowards(actualMoveSpeed, Mathf.Sign(actualMoveSpeed)*Mathf.Epsilon, acceleration);
         }
 
@@ -63,6 +63,8 @@ public class Controller : MonoBehaviour {
             velocity.y = startJumpSpeed;
             isGrounded = false;
         }
+
+
         wasJumpPressed = Input.GetKey(KeyCode.Space);
         isRightPressed = Input.GetKey(KeyCode.D);
         isLeftPressed = Input.GetKey(KeyCode.A);
@@ -112,6 +114,9 @@ public class Controller : MonoBehaviour {
     {
         
         //print(string.Join(", ", keyPoints));
+
+
+        //0.0001 should be zero but FloatingPointPrecisionError 
         if(depth>maxDepth || (maxDistance <= 0.0001f || (Mathf.Abs(velocity.x)<=0.0001f && Mathf.Abs(velocity.y)<=0.0001f)) && depth!=0)
         {
             return pos;
@@ -124,28 +129,31 @@ public class Controller : MonoBehaviour {
             Debug.DrawLine(keyPoints[depth], keyPoints[depth+1]);
             isGrounded = true;
             
-            //maybe useful when modifying to use with capsules
+            //maybe useful when modifying for use with capsules
+
             //Debug.DrawRay(pos + Vector2.down * (hitBox.size.y - hitBox.size.x)/2, (hitBox.size.y - hitBox.size.x)/2 * Vector2.up, Color.yellow);
             //Debug.DrawRay(pos + Vector2.down * (hitBox.size.y - hitBox.size.x)/2, -Mathf.Sign(actualMoveSpeed) * Vector2.Perpendicular(direction) * hitBox.size.x/2, Color.black);
             //Debug.DrawRay(pos, (hitBox.size.y - hitBox.size.x)/2 * Vector2.down - Mathf.Sign(actualMoveSpeed) * Vector2.Perpendicular(direction)* hitBox.size.x/2, Color.blue);
             
+
+            //determine the side collider shifts to when on the edge
             int sign;
             if(keyPoints[depth].y - keyPoints[depth+1].y<=-0.0001f) sign = -(int)Mathf.Sign(actualMoveSpeed);
             else if(keyPoints[depth].y - keyPoints[depth+1].y>=0.0001f) sign = (int)Mathf.Sign(actualMoveSpeed);
             else if(depth+1<keyPoints.Count-1) sign = (int)(Mathf.Sign(keyPoints[depth+1].y-keyPoints[depth+2].y)*Mathf.Sign(actualMoveSpeed));
             else sign = 0;
 
-            Vector2 closestEdge = keyPoints[depth+1] + new Vector2(sign, 1) * (hitBox.size + Vector2.one*skinWidth)/2;
-            Debug.DrawLine(pos, closestEdge, Color.green); 
+            Vector2 closestVertexCentroid = keyPoints[depth+1] + new Vector2(sign, 1) * (hitBox.size + Vector2.one*skinWidth)/2;
+            Debug.DrawLine(pos, closestVertexCentroid, Color.green); 
 
 
             direction = (keyPoints[depth+1] - keyPoints[depth]).normalized;
-            if(direction == Vector2.zero) {direction = (closestEdge - pos).normalized;  }
+            if(direction == Vector2.zero) {direction = (closestVertexCentroid - pos).normalized;  }
             if(direction == Vector2.zero) {direction = velocity.normalized;}
             
 
 
-            distance = Mathf.Min((closestEdge - pos).magnitude, maxDistance);
+            distance = Mathf.Min((closestVertexCentroid - pos).magnitude, maxDistance);
             
         }
         else 
@@ -213,7 +221,7 @@ public class Controller : MonoBehaviour {
 
 
 
-
+    //returns all edges from composite collider that object will traverse when moving in specified x-direction 
     private List<Vector2> GetPath(Vector2 point, float maxDistance, CompositeCollider2D composite, int direction, int path = 0)
     {
         List<Vector2> points = new();
