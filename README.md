@@ -1,0 +1,1 @@
+Attempt to make a custom kinematic collision system based on CollideAndSlide algorithm.  It can handle basically any speed and framerate, at least in most situations. In abstraction, it always snaps to the ground until very specific situations occur, like jump or stepping on a slope bigger than some angle.
